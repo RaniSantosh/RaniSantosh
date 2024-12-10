@@ -1,36 +1,176 @@
-# This is a basic workflow to help you get started with Actions
+npx create-react-app recipe-app
+cd recipe-app
+npm start
 
-name: CI
+// src/RecipeList.js
+import React, { useState, useEffect } from 'react';
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+function RecipeList() {
+  const [recipes, setRecipes] = useState([]);
+  const [search, setSearch] = useState('');
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/recipes?search=${search}`)
+      .then(response => response.json())
+      .then(data => setRecipes(data));
+  }, [search]);
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
-jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+  return (
+    <div>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search for recipes"
+      />
+      <div>
+        {recipes.map(recipe => (// src/App.js
+import React from 'react';
+import RecipeList from './RecipeList';
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+function App() {
+  return (
+    <div className="App">
+      <h1>Recipe Management Application</h1>
+      <RecipeList />
+    </div>
+  );
+}
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+export default App;
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+mkdir backend
+cd backend
+npm init -y
+npm install express mongoose cors body-parser
+
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const Recipe = require('./models/Recipe');
+const recipeRoutes = require('./routes/recipeRoutes');
+
+const app = express();
+const PORT = 5000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/recipeApp', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB', err));
+
+// Use routes
+app.use('/api/recipes', recipeRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// models/Recipe.js
+const mongoose = require('mongoose');
+
+const RecipeSchema = new mongoose.Schema({
+  title: String,
+  ingredients: [String],
+  steps: String,
+  userId: mongoose.Schema.Types.ObjectId,
+  image: String,  // Optional: For media uploads
+  cookingTime: Number, // Optional
+});
+
+module.exports = mongoose.model('Recipe', RecipeSchema);
+
+          <div key={recipe._id}>
+            <h3>{recipe.title}</h3>
+            <p>{recipe.ingredients.join(', ')}</p>
+            <p>{recipe.steps}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default RecipeList;
+
+// models/Recipe.js
+const mongoose = require('mongoose');
+
+const RecipeSchema = new mongoose.Schema({
+  title: String,
+  ingredients: [String],
+  steps: String,
+  userId: mongoose.Schema.Types.ObjectId,
+  image: String,  // Optional: For media uploads
+  cookingTime: Number, // Optional
+});
+
+module.exports = mongoose.model('Recipe', RecipeSchema);
+
+// models/Recipe.js
+const mongoose = require('mongoose');
+
+const RecipeSchema = new mongoose.Schema({
+  title: String,
+  ingredients: [String],
+  steps: String,
+  userId: mongoose.Schema.Types.ObjectId,
+  image: String,  // Optional: For media uploads
+  cookingTime: Number, // Optional
+});
+
+module.exports = mongoose.model('Recipe', RecipeSchema);
+
+// routes/recipeRoutes.js
+const express = require('express');
+const router = express.Router();
+const Recipe = require('../models/Recipe');
+
+// GET all recipes or filter by search query
+router.get('/', async (req, res) => {
+  const search = req.query.search || '';
+  try {
+    const recipes = await Recipe.find({ title: { $regex: search, $options: 'i' } });
+    res.json(recipes);
+  } catch (err) {
+    res.status(500).send('Error fetching recipes');
+  }
+});
+
+// POST a new recipe
+router.post('/', async (req, res) => {
+  const { title, ingredients, steps, userId } = req.body;
+  const newRecipe = new Recipe({ title, ingredients, steps, userId });
+  try {
+    await newRecipe.save();
+    res.status(201).send('Recipe created');
+  } catch (err) {
+    res.status(500).send('Error creating recipe');
+  }
+});
+
+module.exports = router;
+
+{
+  "title": "Chicken Curry",
+  "ingredients": ["Chicken", "Curry Powder", "Garlic", "Ginger"],
+  "steps": "Cook chicken, add spices, simmer.",
+  "userId": "60f5b8e5f7b8c1d3d8c5b4f3"
+}
+
+{
+  "_id": "60f5b8e5f7b8c1d3d8c5b4f3",
+  "title": "Chicken Curry",
+  "ingredients": ["Chicken", "Curry Powder", "Garlic", "Ginger"],
+  "steps": "Cook chicken, add spices, simmer.",
+  "userId": "60f5b8e5f7b8c1d3d8c5b4f3",
+  "image": "path/to/image.jpg",
+  "cookingTime": 30
+}
+
+
+
